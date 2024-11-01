@@ -1,0 +1,509 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > MaritimeMetricCsvService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.maritimemetrics.service</a>
+</div>
+
+<h1>Coverage Summary for Class: MaritimeMetricCsvService (com.example.maritimemetrics.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">MaritimeMetricCsvService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (16/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    71%
+  </span>
+  <span class="absValue">
+    (71/100)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    71.9%
+  </span>
+  <span class="absValue">
+    (97/135)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.maritimemetrics.service;
+&nbsp;
+&nbsp;import com.example.maritimemetrics.model.MaritimeMetric;
+&nbsp;import com.example.maritimemetrics.repository.MaritimeMetricRepository;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;import org.springframework.web.multipart.MultipartFile;
+&nbsp;
+&nbsp;import java.io.BufferedReader;
+&nbsp;import java.io.InputStreamReader;
+&nbsp;import java.math.BigDecimal;
+&nbsp;import java.math.RoundingMode;
+&nbsp;import java.nio.charset.StandardCharsets;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.time.format.DateTimeFormatter;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.List;
+&nbsp;import java.util.logging.Level;
+&nbsp;import java.util.logging.Logger;
+&nbsp;
+&nbsp;/**
+&nbsp; * Service class for handling CSV import and processing of maritime metrics.
+&nbsp; * Parses and validates data from a CSV file and saves valid entries to the database.
+&nbsp; */
+&nbsp;@Service
+<b class="fc">&nbsp;public class MaritimeMetricCsvService {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger LOGGER = Logger.getLogger(MaritimeMetricCsvService.class.getName());</b>
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    private MaritimeMetricRepository maritimeMetricRepository;
+&nbsp;
+&nbsp;    private static final double SPEED_PERCENTAGE_THRESHOLD = 0.5;  // 50% for speed
+&nbsp;    private static final double FUEL_PERCENTAGE_THRESHOLD = 0.5;   // 50% for fuel
+<b class="fc">&nbsp;    private static final DateTimeFormatter DATE_TIME_FORMATTER = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd HH:mm:ss&quot;);</b>
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Imports data from a CSV file and stores it in the database after validation.
+&nbsp;     *
+&nbsp;     * @param file the CSV file to import
+&nbsp;     */
+&nbsp;    public void importDataFromCsv(MultipartFile file) {
+<b class="fc">&nbsp;        maritimeMetricRepository.deleteAll();</b>
+<b class="fc">&nbsp;        List&lt;MaritimeMetric&gt; metrics = new ArrayList&lt;&gt;();</b>
+&nbsp;
+<b class="fc">&nbsp;        try (BufferedReader reader = new BufferedReader(new InputStreamReader(file.getInputStream(), StandardCharsets.UTF_8))) {</b>
+&nbsp;            String line;
+<b class="fc">&nbsp;            boolean isHeader = true;</b>
+&nbsp;
+<b class="fc">&nbsp;            while ((line = reader.readLine()) != null) {</b>
+<b class="fc">&nbsp;                if (isHeader) {</b>
+<b class="fc">&nbsp;                    isHeader = false;</b>
+&nbsp;                    continue;
+&nbsp;                }
+&nbsp;
+<b class="fc">&nbsp;                String[] fields = line.split(&quot;,&quot;);</b>
+<b class="fc">&nbsp;                MaritimeMetric metric = parseAndValidate(fields);</b>
+&nbsp;
+<b class="pc">&nbsp;                if (metric != null) {</b>
+<b class="fc">&nbsp;                    metrics.add(metric);</b>
+&nbsp;                }
+&nbsp;            }
+<b class="fc">&nbsp;            maritimeMetricRepository.saveAll(metrics);</b>
+<b class="fc">&nbsp;            LOGGER.log(Level.INFO, &quot;Successfully imported data from CSV with &quot; + metrics.size() + &quot; records.&quot;);</b>
+<b class="fc">&nbsp;        } catch (Exception e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.SEVERE, &quot;Error reading CSV file: &quot; + e.getMessage(), e);</b>
+<b class="nc">&nbsp;            throw new IllegalArgumentException(&quot;Failed to process CSV file.&quot;);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Parses and validates a row of CSV data.
+&nbsp;     *
+&nbsp;     * @param fields array of strings representing the columns in a CSV row
+&nbsp;     * @return a MaritimeMetric object if validation passes; null otherwise
+&nbsp;     */
+&nbsp;    private MaritimeMetric parseAndValidate(String[] fields) {
+<b class="fc">&nbsp;        MaritimeMetric metric = new MaritimeMetric();</b>
+&nbsp;
+<b class="pc">&nbsp;        if (!validateVesselCode(removeQuotes(fields[0]), metric)) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Skipping row with invalid vessel code&quot;);</b>
+<b class="nc">&nbsp;            return null;</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        validateDatetime(removeQuotes(fields[1]), metric);</b>
+<b class="fc">&nbsp;        validateLatitude(removeQuotes(fields[2]), metric);</b>
+<b class="fc">&nbsp;        validateLongitude(removeQuotes(fields[3]), metric);</b>
+<b class="fc">&nbsp;        validatePower(removeQuotes(fields[4]), metric);</b>
+<b class="fc">&nbsp;        validateFuelConsumption(removeQuotes(fields[5]), metric);</b>
+<b class="fc">&nbsp;        validateActualSpeed(removeQuotes(fields[6]), metric);</b>
+<b class="fc">&nbsp;        validateProposedSpeed(removeQuotes(fields[7]), metric);</b>
+<b class="fc">&nbsp;        validatePredictedFuelConsumption(removeQuotes(fields[8]), metric);</b>
+&nbsp;
+&nbsp;        // Check for below-zero conditions after validating all fields
+<b class="fc">&nbsp;        checkBelowZeroCondition(metric);</b>
+<b class="fc">&nbsp;        calculateDerivedFields(metric);</b>
+<b class="fc">&nbsp;        return metric;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Checks and sets the below-zero condition flag for specified metric fields.
+&nbsp;     *
+&nbsp;     * @param metric the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void checkBelowZeroCondition(MaritimeMetric metric) {
+<b class="pc">&nbsp;        boolean belowZero = metric.getPower() != null &amp;&amp; metric.getPower() &lt; 0;</b>
+&nbsp;
+<b class="fc">&nbsp;        if (metric.getFuelConsumption() != null &amp;&amp; metric.getFuelConsumption() &lt; 0) {</b>
+<b class="fc">&nbsp;            belowZero = true;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        if (metric.getActualSpeedOverground() != null &amp;&amp; metric.getActualSpeedOverground() &lt; 0) {</b>
+<b class="fc">&nbsp;            belowZero = true;</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (metric.getProposedSpeedOverground() != null &amp;&amp; metric.getProposedSpeedOverground() &lt; 0) {</b>
+<b class="nc">&nbsp;            belowZero = true;</b>
+&nbsp;        }
+<b class="pc">&nbsp;        if (metric.getPredictedFuelConsumption() != null &amp;&amp; metric.getPredictedFuelConsumption() &lt; 0) {</b>
+<b class="nc">&nbsp;            belowZero = true;</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        metric.setIsBelowZero(belowZero);</b>
+<b class="fc">&nbsp;        if (belowZero) {</b>
+<b class="fc">&nbsp;            LOGGER.log(Level.INFO, &quot;Set IsBelowZero flag to true for vessel &quot; + metric.getVesselCode());</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Removes surrounding quotes from a string, if present.
+&nbsp;     *
+&nbsp;     * @param value the string to process
+&nbsp;     * @return the unquoted string
+&nbsp;     */
+&nbsp;    private String removeQuotes(String value) {
+<b class="fc">&nbsp;        return value.replaceAll(&quot;^\&quot;|\&quot;$&quot;, &quot;&quot;).trim();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the vessel code.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code to validate
+&nbsp;     * @param metric     the MaritimeMetric object to update
+&nbsp;     * @return true if valid; false otherwise
+&nbsp;     */
+&nbsp;    private boolean validateVesselCode(String vesselCode, MaritimeMetric metric) {
+<b class="pc">&nbsp;        if (vesselCode == null || vesselCode.isEmpty()) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid vessel code: &quot; + vesselCode);</b>
+<b class="nc">&nbsp;            return false;</b>
+&nbsp;        }
+<b class="fc">&nbsp;        metric.setVesselCode(vesselCode);</b>
+<b class="fc">&nbsp;        return true;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the datetime.
+&nbsp;     *
+&nbsp;     * @param datetimeStr the datetime string to validate
+&nbsp;     * @param metric      the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void validateDatetime(String datetimeStr, MaritimeMetric metric) {
+&nbsp;        try {
+<b class="fc">&nbsp;            metric.setDatetime(LocalDateTime.parse(datetimeStr, DATE_TIME_FORMATTER));</b>
+<b class="nc">&nbsp;        } catch (Exception e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid datetime format for value: &quot; + datetimeStr, e);</b>
+<b class="nc">&nbsp;            metric.setIsMissing(true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the latitude.
+&nbsp;     *
+&nbsp;     * @param latitudeStr the latitude string to validate
+&nbsp;     * @param metric      the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void validateLatitude(String latitudeStr, MaritimeMetric metric) {
+&nbsp;        try {
+<b class="pc">&nbsp;            if (latitudeStr == null || latitudeStr.equalsIgnoreCase(&quot;NULL&quot;) || latitudeStr.trim().isEmpty()) {</b>
+<b class="fc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Latitude value is missing: &quot; + latitudeStr);</b>
+<b class="fc">&nbsp;                metric.setIsMissing(true);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            Double latitude = Double.parseDouble(latitudeStr);</b>
+<b class="pc">&nbsp;            if (latitude &gt;= -90 &amp;&amp; latitude &lt;= 90) {</b>
+<b class="fc">&nbsp;                metric.setLatitude(latitude);</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Latitude out of range for value: &quot; + latitudeStr);</b>
+<b class="nc">&nbsp;                metric.setIsOutlier(true);</b>
+&nbsp;            }
+<b class="nc">&nbsp;        } catch (NumberFormatException e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid latitude format for value: &quot; + latitudeStr, e);</b>
+<b class="nc">&nbsp;            metric.setIsMissing(true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the longitude.
+&nbsp;     *
+&nbsp;     * @param longitudeStr the longitude string to validate
+&nbsp;     * @param metric       the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void validateLongitude(String longitudeStr, MaritimeMetric metric) {
+&nbsp;        try {
+<b class="pc">&nbsp;            if (longitudeStr == null || longitudeStr.equalsIgnoreCase(&quot;NULL&quot;) || longitudeStr.trim().isEmpty()) {</b>
+<b class="fc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Longitude value is missing: &quot; + longitudeStr);</b>
+<b class="fc">&nbsp;                metric.setIsMissing(true);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+<b class="fc">&nbsp;            Double longitude = Double.parseDouble(longitudeStr);</b>
+<b class="pc">&nbsp;            if (longitude &gt;= -180 &amp;&amp; longitude &lt;= 180) {</b>
+<b class="fc">&nbsp;                metric.setLongitude(longitude);</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Longitude out of range for value: &quot; + longitudeStr);</b>
+<b class="nc">&nbsp;                metric.setIsOutlier(true);</b>
+&nbsp;            }
+<b class="nc">&nbsp;        } catch (NumberFormatException e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid longitude format for value: &quot; + longitudeStr, e);</b>
+<b class="nc">&nbsp;            metric.setIsMissing(true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the power value from the provided string.
+&nbsp;     * If the value is null, empty, or &quot;NULL&quot;, it marks the metric as missing.
+&nbsp;     *
+&nbsp;     * @param powerStr the power string to validate
+&nbsp;     * @param metric   the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void validatePower(String powerStr, MaritimeMetric metric) {
+&nbsp;        try {
+&nbsp;            // Check if the value is &quot;NULL&quot; or empty, and set as missing if true
+<b class="pc">&nbsp;            if (powerStr == null || powerStr.equalsIgnoreCase(&quot;NULL&quot;) || powerStr.trim().isEmpty()) {</b>
+<b class="fc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Power value is missing: &quot; + powerStr);</b>
+<b class="fc">&nbsp;                metric.setIsMissing(true);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+&nbsp;            // Proceed with parsing if value is not &quot;NULL&quot;
+<b class="fc">&nbsp;            Double power = Double.parseDouble(powerStr);</b>
+<b class="fc">&nbsp;            metric.setPower(power);</b>
+<b class="nc">&nbsp;        } catch (NumberFormatException e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid power format for value: &quot; + powerStr, e);</b>
+<b class="nc">&nbsp;            metric.setIsMissing(true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the fuel consumption value from the provided string.
+&nbsp;     * If the value is null, empty, or &quot;NULL&quot;, it marks the metric as missing.
+&nbsp;     *
+&nbsp;     * @param fuelConsumptionStr the fuel consumption string to validate
+&nbsp;     * @param metric             the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void validateFuelConsumption(String fuelConsumptionStr, MaritimeMetric metric) {
+&nbsp;        try {
+&nbsp;            // Check if the value is &quot;NULL&quot; or empty, and set as missing if true
+<b class="pc">&nbsp;            if (fuelConsumptionStr == null || fuelConsumptionStr.equalsIgnoreCase(&quot;NULL&quot;) || fuelConsumptionStr.trim().isEmpty()) {</b>
+<b class="fc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Fuel consumption value is missing: &quot; + fuelConsumptionStr);</b>
+<b class="fc">&nbsp;                metric.setIsMissing(true);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+&nbsp;            // Proceed with parsing if value is not &quot;NULL&quot;
+<b class="fc">&nbsp;            metric.setFuelConsumption(Double.parseDouble(fuelConsumptionStr));</b>
+<b class="nc">&nbsp;        } catch (NumberFormatException e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid fuel consumption format for value: &quot; + fuelConsumptionStr, e);</b>
+<b class="nc">&nbsp;            metric.setIsMissing(true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the actual speed value from the provided string.
+&nbsp;     * If the value is null, empty, or &quot;NULL&quot;, it marks the metric as missing.
+&nbsp;     *
+&nbsp;     * @param actualSpeedStr the actual speed string to validate
+&nbsp;     * @param metric         the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void validateActualSpeed(String actualSpeedStr, MaritimeMetric metric) {
+&nbsp;        try {
+&nbsp;            // Check if the value is &quot;NULL&quot; or empty, and set as missing if true
+<b class="pc">&nbsp;            if (actualSpeedStr == null || actualSpeedStr.equalsIgnoreCase(&quot;NULL&quot;) || actualSpeedStr.trim().isEmpty()) {</b>
+<b class="fc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Actual speed value is missing: &quot; + actualSpeedStr);</b>
+<b class="fc">&nbsp;                metric.setIsMissing(true);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+&nbsp;            // Proceed with parsing if value is not &quot;NULL&quot;
+<b class="fc">&nbsp;            metric.setActualSpeedOverground(Double.parseDouble(actualSpeedStr));</b>
+<b class="nc">&nbsp;        } catch (NumberFormatException e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid actual speed format for value: &quot; + actualSpeedStr, e);</b>
+<b class="nc">&nbsp;            metric.setIsMissing(true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the proposed speed value from the provided string.
+&nbsp;     * If the value is null, empty, or &quot;NULL&quot;, it marks the metric as missing.
+&nbsp;     * It also checks for outliers based on the proposed and actual speeds.
+&nbsp;     *
+&nbsp;     * @param proposedSpeedStr the proposed speed string to validate
+&nbsp;     * @param metric           the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void validateProposedSpeed(String proposedSpeedStr, MaritimeMetric metric) {
+&nbsp;        try {
+&nbsp;            // Check if the value is &quot;NULL&quot; or empty, and set as missing if true
+<b class="pc">&nbsp;            if (proposedSpeedStr == null || proposedSpeedStr.equalsIgnoreCase(&quot;NULL&quot;) || proposedSpeedStr.trim().isEmpty()) {</b>
+<b class="fc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Proposed speed value is missing: &quot; + proposedSpeedStr);</b>
+<b class="fc">&nbsp;                metric.setIsMissing(true);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+&nbsp;            // Proceed with parsing if value is not &quot;NULL&quot;
+<b class="fc">&nbsp;            Double proposedSpeed = Double.parseDouble(proposedSpeedStr);</b>
+<b class="fc">&nbsp;            metric.setProposedSpeedOverground(proposedSpeed);</b>
+&nbsp;
+&nbsp;            // Check for outlier based on proposed and actual speeds
+<b class="pc">&nbsp;            if (metric.getActualSpeedOverground() != null &amp;&amp;</b>
+<b class="fc">&nbsp;                    Math.abs((metric.getActualSpeedOverground() - proposedSpeed) / metric.getActualSpeedOverground()) &gt; SPEED_PERCENTAGE_THRESHOLD) {</b>
+<b class="fc">&nbsp;                LOGGER.log(Level.INFO, &quot;Proposed speed outlier detected for actual: &quot; + metric.getActualSpeedOverground() +</b>
+&nbsp;                        &quot; and proposed: &quot; + proposedSpeed);
+<b class="fc">&nbsp;                metric.setIsOutlier(true);</b>
+&nbsp;            }
+<b class="nc">&nbsp;        } catch (NumberFormatException e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid proposed speed format for value: &quot; + proposedSpeedStr, e);</b>
+<b class="nc">&nbsp;            metric.setIsMissing(true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates and sets the predicted fuel consumption value from the provided string.
+&nbsp;     * If the value is null, empty, or &quot;NULL&quot;, it marks the metric as missing.
+&nbsp;     * It also checks for outliers based on the predicted and actual fuel consumption.
+&nbsp;     *
+&nbsp;     * @param predictedFuelStr the predicted fuel consumption string to validate
+&nbsp;     * @param metric           the MaritimeMetric object to update
+&nbsp;     */
+&nbsp;    private void validatePredictedFuelConsumption(String predictedFuelStr, MaritimeMetric metric) {
+&nbsp;        try {
+&nbsp;            // Check if the value is &quot;NULL&quot; or empty, and set as missing if true
+<b class="pc">&nbsp;            if (predictedFuelStr == null || predictedFuelStr.equalsIgnoreCase(&quot;NULL&quot;) || predictedFuelStr.trim().isEmpty()) {</b>
+<b class="nc">&nbsp;                LOGGER.log(Level.WARNING, &quot;Predicted fuel consumption value is missing: &quot; + predictedFuelStr);</b>
+<b class="nc">&nbsp;                metric.setIsMissing(true);</b>
+&nbsp;                return;
+&nbsp;            }
+&nbsp;
+&nbsp;            // Proceed with parsing if value is not &quot;NULL&quot;
+<b class="fc">&nbsp;            Double predictedFuel = Double.parseDouble(predictedFuelStr);</b>
+<b class="fc">&nbsp;            metric.setPredictedFuelConsumption(predictedFuel);</b>
+&nbsp;
+&nbsp;            // Check for outlier based on predicted and actual fuel consumption
+<b class="fc">&nbsp;            if (metric.getFuelConsumption() != null &amp;&amp;</b>
+<b class="fc">&nbsp;                    Math.abs((metric.getFuelConsumption() - predictedFuel) / metric.getFuelConsumption()) &gt; FUEL_PERCENTAGE_THRESHOLD) {</b>
+<b class="fc">&nbsp;                LOGGER.log(Level.INFO, &quot;Fuel consumption outlier detected for actual: &quot; + metric.getFuelConsumption() +</b>
+&nbsp;                        &quot; and predicted: &quot; + predictedFuel);
+<b class="fc">&nbsp;                metric.setIsOutlier(true);</b>
+&nbsp;            }
+<b class="nc">&nbsp;        } catch (NumberFormatException e) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;Invalid predicted fuel consumption format for value: &quot; + predictedFuelStr, e);</b>
+<b class="nc">&nbsp;            metric.setIsMissing(true);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Calculates and sets derived fields for the given MaritimeMetric object.
+&nbsp;     * Specifically, it calculates the speed difference between actual and proposed speeds,
+&nbsp;     * rounds it to six decimal places, and sets the speedDifference property.
+&nbsp;     * It also determines if the metric is invalid based on below-zero, missing, or outlier flags.
+&nbsp;     *
+&nbsp;     * @param metric the MaritimeMetric object for which to calculate derived fields
+&nbsp;     */
+&nbsp;    private void calculateDerivedFields(MaritimeMetric metric) {
+<b class="pc">&nbsp;        if (metric.getActualSpeedOverground() != null &amp;&amp; metric.getProposedSpeedOverground() != null) {</b>
+<b class="fc">&nbsp;            double speedDifference = metric.getActualSpeedOverground() - metric.getProposedSpeedOverground();</b>
+&nbsp;
+&nbsp;            // If using BigDecimal for rounding, convert back to double
+<b class="fc">&nbsp;            BigDecimal roundedSpeedDifference = new BigDecimal(speedDifference).setScale(6, RoundingMode.HALF_UP);</b>
+&nbsp;
+&nbsp;            // Ensure you&#39;re setting a double value back
+<b class="fc">&nbsp;            metric.setSpeedDifference(roundedSpeedDifference.doubleValue());</b>
+&nbsp;
+<b class="fc">&nbsp;            LOGGER.log(Level.INFO, &quot;Calculated speed difference for vessel &quot; + metric.getVesselCode() +</b>
+<b class="fc">&nbsp;                    &quot;: &quot; + metric.getSpeedDifference());</b>
+&nbsp;        }
+&nbsp;
+<b class="fc">&nbsp;        metric.setIsInvalid(</b>
+<b class="fc">&nbsp;                Boolean.TRUE.equals(metric.getIsBelowZero()) ||</b>
+<b class="fc">&nbsp;                        Boolean.TRUE.equals(metric.getIsMissing()) ||</b>
+<b class="fc">&nbsp;                        Boolean.TRUE.equals(metric.getIsOutlier())</b>
+&nbsp;        );
+&nbsp;
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Set IsInvalid flag to &quot; + metric.getIsInvalid() + &quot; for vessel &quot; + metric.getVesselCode());</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-11-01 10:26</div>
+</div>
+</body>
+</html>

@@ -1,0 +1,326 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > MaritimeMetricController</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.maritimemetrics.controller</a>
+</div>
+
+<h1>Coverage Summary for Class: MaritimeMetricController (com.example.maritimemetrics.controller)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">MaritimeMetricController</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    81.2%
+  </span>
+  <span class="absValue">
+    (13/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    82.9%
+  </span>
+  <span class="absValue">
+    (29/35)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.maritimemetrics.controller;
+&nbsp;
+&nbsp;import com.example.maritimemetrics.dto.MetricSummaryDTO;
+&nbsp;import com.example.maritimemetrics.dto.SpeedDifferenceDTO;
+&nbsp;import com.example.maritimemetrics.model.MaritimeMetric;
+&nbsp;import com.example.maritimemetrics.repository.MaritimeMetricRepository;
+&nbsp;import com.example.maritimemetrics.service.MaritimeMetricStatisticsService;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.http.ResponseEntity;
+&nbsp;import org.springframework.web.bind.annotation.*;
+&nbsp;
+&nbsp;import java.time.LocalDateTime;
+&nbsp;import java.time.format.DateTimeFormatter;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.logging.Level;
+&nbsp;import java.util.logging.Logger;
+&nbsp;
+&nbsp;/**
+&nbsp; * REST controller providing endpoints to manage and retrieve maritime metrics.
+&nbsp; */
+&nbsp;@RestController
+&nbsp;@RequestMapping(&quot;/api/metrics&quot;)
+<b class="fc">&nbsp;public class MaritimeMetricController {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger LOGGER = Logger.getLogger(MaritimeMetricController.class.getName());</b>
+<b class="fc">&nbsp;    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern(&quot;yyyy-MM-dd&#39;T&#39;HH:mm:ss&quot;);</b>
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    private MaritimeMetricRepository maritimeMetricRepository;
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    private MaritimeMetricStatisticsService maritimeMetricStatisticsService;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves all maritime metrics data.
+&nbsp;     *
+&nbsp;     * @return a list of all maritime metrics
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/all&quot;)
+&nbsp;    public List&lt;MaritimeMetric&gt; getAllData() {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching all metrics data&quot;);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAll();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves all unique vessel codes.
+&nbsp;     *
+&nbsp;     * @return a list of vessel codes
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/vessel-codes&quot;)
+&nbsp;    public List&lt;String&gt; getAllVesselCodes() {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching all vessel codes&quot;);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllVesselCodes();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves valid data for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @return a list of valid maritime metrics for the specified vessel
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/valid&quot;)
+&nbsp;    public List&lt;MaritimeMetric&gt; getAllValidDataByVesselCode(@PathVariable String vesselCode) {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching all valid data for vesselCode: &quot; + vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllByVesselCodeAndIsInvalidFalse(vesselCode);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves invalid data for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @return a list of invalid maritime metrics for the specified vessel
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/invalid&quot;)
+&nbsp;    public List&lt;MaritimeMetric&gt; getAllInvalidDataByVesselCode(@PathVariable String vesselCode) {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching all invalid data for vesselCode: &quot; + vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllByVesselCodeAndIsInvalidTrue(vesselCode);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves data with missing values for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @return a list of maritime metrics with missing values for the specified vessel
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/missing&quot;)
+&nbsp;    public List&lt;MaritimeMetric&gt; getAllMissingDataByVesselCode(@PathVariable String vesselCode) {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching all missing data for vesselCode: &quot; + vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllByVesselCodeAndIsMissingTrue(vesselCode);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves below-zero data for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @return a list of maritime metrics with below-zero values for the specified vessel
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/below-zero&quot;)
+&nbsp;    public List&lt;MaritimeMetric&gt; getAllBelowZeroDataByVesselCode(@PathVariable String vesselCode) {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching all below-zero data for vesselCode: &quot; + vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllByVesselCodeAndIsBelowZeroTrue(vesselCode);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves outlier data for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @return a list of maritime metrics with outlier values for the specified vessel
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/outlier&quot;)
+&nbsp;    public List&lt;MaritimeMetric&gt; getAllOutlierDataByVesselCode(@PathVariable String vesselCode) {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching all outlier data for vesselCode: &quot; + vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllByVesselCodeAndIsOutlierTrue(vesselCode);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves speed difference data for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @return a list of speed differences for the specified vessel
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/speed-difference&quot;)
+&nbsp;    public List&lt;SpeedDifferenceDTO&gt; getSpeedDifferencesByVesselCode(@PathVariable String vesselCode) {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching speed differences for vesselCode: &quot; + vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findSpeedDifferencesByVesselCode(vesselCode);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves problem frequencies for a specific vessel, sorted by frequency.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @return a map of problem types and their frequencies for the specified vessel
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/problems/frequencies&quot;)
+&nbsp;    public Map&lt;String, Long&gt; getProblemFrequenciesSorted(@PathVariable String vesselCode) {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching problem frequencies for vesselCode: &quot; + vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricStatisticsService.getProblemFrequenciesAndValidityMetrics(vesselCode);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves grouped problematic waypoints for a specified problem type in a vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @param problemType the type of problem (e.g., &quot;missing&quot;, &quot;below-zero&quot;, &quot;outlier&quot;)
+&nbsp;     * @return a list of grouped waypoints with the specified problem type
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/problems/groups&quot;)
+&nbsp;    public List&lt;List&lt;MaritimeMetric&gt;&gt; getProblematicGroups(
+&nbsp;            @PathVariable String vesselCode,
+&nbsp;            @RequestParam String problemType) {
+<b class="nc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching problematic groups for vesselCode: &quot; + vesselCode + &quot; with problemType: &quot; + problemType);</b>
+<b class="nc">&nbsp;        return maritimeMetricStatisticsService.getConsecutiveProblematicGroups(vesselCode, problemType);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves metrics for a specific vessel within a specified time period.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @param startDate the start date in &quot;yyyy-MM-dd&#39;T&#39;HH:mm:ss&quot; format
+&nbsp;     * @param endDate the end date in &quot;yyyy-MM-dd&#39;T&#39;HH:mm:ss&quot; format
+&nbsp;     * @return a list of metric summaries within the specified period
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/{vesselCode}/summary-metrics&quot;)
+&nbsp;    public List&lt;MetricSummaryDTO&gt; getMetricsForVesselInPeriod(
+&nbsp;            @PathVariable String vesselCode,
+&nbsp;            @RequestParam String startDate,
+&nbsp;            @RequestParam String endDate) {
+<b class="fc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching summary metrics for vesselCode: &quot; + vesselCode + &quot; between &quot; + startDate + &quot; and &quot; + endDate);</b>
+<b class="fc">&nbsp;        LocalDateTime start = LocalDateTime.parse(startDate, DATE_FORMATTER);</b>
+<b class="fc">&nbsp;        LocalDateTime end = LocalDateTime.parse(endDate, DATE_FORMATTER);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findMetricsByVesselCodeAndDatetimeBetween(vesselCode, start, end);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Compares two vessels based on median speed difference to determine which is more compliant.
+&nbsp;     *
+&nbsp;     * @param vesselCode1 the first vessel code
+&nbsp;     * @param vesselCode2 the second vessel code
+&nbsp;     * @return a JSON object with the vessel code that has higher compliance
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/more-compliant&quot;)
+&nbsp;    public ResponseEntity&lt;Map&lt;String, String&gt;&gt; getMedianSpeedDifference(@RequestParam String vesselCode1, @RequestParam String vesselCode2) {
+<b class="fc">&nbsp;        String result = maritimeMetricStatisticsService.compareVesselSpeedMedians(vesselCode1, vesselCode2);</b>
+<b class="fc">&nbsp;        Map&lt;String, String&gt; response = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        response.put(&quot;result&quot;, result);</b>
+<b class="fc">&nbsp;        return ResponseEntity.ok(response);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves speed outliers for a specific vessel based on a threshold.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @param speedThreshold the speed threshold for outliers
+&nbsp;     * @return a list of speed outliers
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/outliers/speed&quot;)
+&nbsp;    public List&lt;MaritimeMetric&gt; getSpeedOutliers(
+&nbsp;            @RequestParam String vesselCode,
+&nbsp;            @RequestParam double speedThreshold) {
+<b class="nc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching speed outliers for vesselCode: &quot; + vesselCode + &quot; with speedThreshold: &quot; + speedThreshold);</b>
+<b class="nc">&nbsp;        return maritimeMetricStatisticsService.getSpeedOutliers(vesselCode, speedThreshold);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves fuel outliers for a specific vessel based on a threshold.
+&nbsp;     *
+&nbsp;     * @param vesselCode the vessel code
+&nbsp;     * @param fuelThreshold the fuel threshold for outliers
+&nbsp;     * @return a list of fuel outliers
+&nbsp;     */
+&nbsp;    @GetMapping(&quot;/outliers/fuel&quot;)
+&nbsp;    public List&lt;MaritimeMetric&gt; getFuelOutliers(
+&nbsp;            @RequestParam String vesselCode,
+&nbsp;            @RequestParam double fuelThreshold) {
+<b class="nc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching fuel outliers for vesselCode: &quot; + vesselCode + &quot; with fuelThreshold: &quot; + fuelThreshold);</b>
+<b class="nc">&nbsp;        return maritimeMetricStatisticsService.getFuelOutliers(vesselCode, fuelThreshold);</b>
+&nbsp;    }
+&nbsp;}
+&nbsp;
+&nbsp;
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-11-01 10:26</div>
+</div>
+</body>
+</html>

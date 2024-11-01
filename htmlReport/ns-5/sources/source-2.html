@@ -1,0 +1,421 @@
+
+
+
+<!DOCTYPE html>
+<html id="htmlId">
+<head>
+  <meta http-equiv="Content-Type" content="text/html;charset=UTF-8"> 
+  <title>Coverage Report > MaritimeMetricStatisticsService</title>
+  <style type="text/css">
+    @import "../../css/coverage.css";
+    @import "../../css/idea.min.css";
+  </style>
+  <script type="text/javascript" src="../../js/highlight.min.js"></script>
+  <script type="text/javascript" src="../../js/highlightjs-line-numbers.min.js"></script>
+</head>
+
+<body>
+<div class="content">
+<div class="breadCrumbs">
+Current scope:     <a href="../../index.html">all classes</a>
+    <span class="separator">|</span>
+    <a href="../index.html">com.example.maritimemetrics.service</a>
+</div>
+
+<h1>Coverage Summary for Class: MaritimeMetricStatisticsService (com.example.maritimemetrics.service)</h1>
+
+<table class="coverageStats">
+<tr>
+  <th class="name">Class</th>
+<th class="coverageStat 
+">
+  Class, %
+</th>
+<th class="coverageStat 
+">
+  Method, %
+</th>
+<th class="coverageStat 
+">
+  Branch, %
+</th>
+<th class="coverageStat 
+">
+  Line, %
+</th>
+</tr>
+<tr>
+  <td class="name">MaritimeMetricStatisticsService</td>
+<td class="coverageStat">
+  <span class="percent">
+    100%
+  </span>
+  <span class="absValue">
+    (1/1)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    62.5%
+  </span>
+  <span class="absValue">
+    (10/16)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    17.9%
+  </span>
+  <span class="absValue">
+    (7/39)
+  </span>
+</td>
+<td class="coverageStat">
+  <span class="percent">
+    40.2%
+  </span>
+  <span class="absValue">
+    (41/102)
+  </span>
+</td>
+</tr>
+
+</table>
+
+<br/>
+<br/>
+
+
+<pre>
+<code class="sourceCode" id="sourceCode">&nbsp;package com.example.maritimemetrics.service;
+&nbsp;
+&nbsp;import com.example.maritimemetrics.exception.ResourceNotFoundException;
+&nbsp;import com.example.maritimemetrics.model.MaritimeMetric;
+&nbsp;import com.example.maritimemetrics.repository.MaritimeMetricRepository;
+&nbsp;import org.springframework.beans.factory.annotation.Autowired;
+&nbsp;import org.springframework.stereotype.Service;
+&nbsp;
+&nbsp;import java.time.Duration;
+&nbsp;import java.util.ArrayList;
+&nbsp;import java.util.HashMap;
+&nbsp;import java.util.List;
+&nbsp;import java.util.Map;
+&nbsp;import java.util.logging.Level;
+&nbsp;import java.util.logging.Logger;
+&nbsp;
+&nbsp;/**
+&nbsp; * Service class for performing statistical calculations and retrieving metrics related to maritime data.
+&nbsp; */
+&nbsp;@Service
+<b class="fc">&nbsp;public class MaritimeMetricStatisticsService {</b>
+&nbsp;
+<b class="fc">&nbsp;    private static final Logger LOGGER = Logger.getLogger(MaritimeMetricStatisticsService.class.getName());</b>
+<b class="fc">&nbsp;    private static final Duration TIME_THRESHOLD = Duration.ofMinutes(5);  // Example: 5 minutes</b>
+&nbsp;
+&nbsp;    @Autowired
+&nbsp;    private MaritimeMetricRepository maritimeMetricRepository;
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Calculates the frequency of missing data for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the code of the vessel
+&nbsp;     * @return the count of missing data entries
+&nbsp;     */
+&nbsp;    public long calculateMissingFrequency(String vesselCode) {
+<b class="fc">&nbsp;        validateVesselExists(vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllByVesselCodeAndIsMissingTrue(vesselCode).size();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Calculates the frequency of below-zero data for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the code of the vessel
+&nbsp;     * @return the count of below-zero entries
+&nbsp;     */
+&nbsp;    public long calculateBelowZeroFrequency(String vesselCode) {
+<b class="fc">&nbsp;        validateVesselExists(vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllByVesselCodeAndIsBelowZeroTrue(vesselCode).size();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Calculates the frequency of outlier data for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the code of the vessel
+&nbsp;     * @return the count of outlier entries
+&nbsp;     */
+&nbsp;    public long calculateOutlierFrequency(String vesselCode) {
+<b class="fc">&nbsp;        validateVesselExists(vesselCode);</b>
+<b class="fc">&nbsp;        return maritimeMetricRepository.findAllByVesselCodeAndIsOutlierTrue(vesselCode).size();</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Calculates validity metrics, including the total and invalid counts for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the code of the vessel
+&nbsp;     * @return a map containing total and invalid counts
+&nbsp;     */
+&nbsp;    public Map&lt;String, Long&gt; calculateValidityMetrics(String vesselCode) {
+<b class="fc">&nbsp;        validateVesselExists(vesselCode);</b>
+<b class="fc">&nbsp;        Map&lt;String, Long&gt; validityMetrics = new HashMap&lt;&gt;();</b>
+<b class="fc">&nbsp;        long total = maritimeMetricRepository.findAllByVesselCode(vesselCode).size();</b>
+<b class="fc">&nbsp;        long invalid = maritimeMetricRepository.findAllByVesselCodeAndIsInvalidTrue(vesselCode).size();</b>
+&nbsp;
+<b class="fc">&nbsp;        validityMetrics.put(&quot;Invalid&quot;, invalid);</b>
+<b class="fc">&nbsp;        validityMetrics.put(&quot;Total&quot;, total);</b>
+&nbsp;
+<b class="fc">&nbsp;        return validityMetrics;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves problem frequencies and validity metrics for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the code of the vessel
+&nbsp;     * @return a map of problem frequencies and validity metrics
+&nbsp;     */
+&nbsp;    public Map&lt;String, Long&gt; getProblemFrequenciesAndValidityMetrics(String vesselCode) {
+<b class="fc">&nbsp;        validateVesselExists(vesselCode);</b>
+<b class="fc">&nbsp;        Map&lt;String, Long&gt; metrics = new HashMap&lt;&gt;();</b>
+&nbsp;
+<b class="fc">&nbsp;        metrics.put(&quot;Missing&quot;, calculateMissingFrequency(vesselCode));</b>
+<b class="fc">&nbsp;        metrics.put(&quot;BelowZero&quot;, calculateBelowZeroFrequency(vesselCode));</b>
+<b class="fc">&nbsp;        metrics.put(&quot;Outlier&quot;, calculateOutlierFrequency(vesselCode));</b>
+&nbsp;
+<b class="fc">&nbsp;        Map&lt;String, Long&gt; validityMetrics = calculateValidityMetrics(vesselCode);</b>
+<b class="fc">&nbsp;        metrics.putAll(validityMetrics);</b>
+&nbsp;
+<b class="fc">&nbsp;        return metrics.entrySet().stream()</b>
+<b class="fc">&nbsp;                .sorted((e1, e2) -&gt; Long.compare(e2.getValue(), e1.getValue()))</b>
+<b class="fc">&nbsp;                .collect(HashMap::new, (m, e) -&gt; m.put(e.getKey(), e.getValue()), HashMap::putAll);</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Calculates the median speed difference for a specific vessel.
+&nbsp;     *
+&nbsp;     * @param vesselCode the code of the vessel
+&nbsp;     * @return the median speed difference
+&nbsp;     */
+&nbsp;    public double calculateMedianSpeedDifference(String vesselCode) {
+<b class="fc">&nbsp;        List&lt;MaritimeMetric&gt; waypoints = maritimeMetricRepository.findAllByVesselCode(vesselCode);</b>
+&nbsp;
+<b class="fc">&nbsp;        List&lt;Double&gt; speedDifferences = waypoints.stream()</b>
+<b class="pc">&nbsp;                .filter(m -&gt; m.getActualSpeedOverground() != null &amp;&amp; m.getProposedSpeedOverground() != null)</b>
+<b class="fc">&nbsp;                .map(m -&gt; Math.abs(m.getActualSpeedOverground() - m.getProposedSpeedOverground()))</b>
+<b class="fc">&nbsp;                .sorted() // Sort the differences</b>
+<b class="fc">&nbsp;                .toList();</b>
+&nbsp;
+<b class="fc">&nbsp;        int size = speedDifferences.size();</b>
+<b class="pc">&nbsp;        if (size == 0) {</b>
+<b class="nc">&nbsp;            return 0; // Handle the case with no valid speed differences</b>
+&nbsp;        }
+&nbsp;
+<b class="pc">&nbsp;        if (size % 2 == 0) {</b>
+&nbsp;            // Average of the two middle numbers for even count
+<b class="fc">&nbsp;            return (speedDifferences.get(size / 2 - 1) + speedDifferences.get(size / 2)) / 2.0;</b>
+&nbsp;        } else {
+&nbsp;            // Middle number for odd count
+<b class="nc">&nbsp;            return speedDifferences.get(size / 2);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Compares the median speed differences of two vessels.
+&nbsp;     *
+&nbsp;     * @param vesselCode1 the code of the first vessel
+&nbsp;     * @param vesselCode2 the code of the second vessel
+&nbsp;     * @return the vessel code of the vessel with the lower median speed difference, or &quot;equal&quot; if they are the same
+&nbsp;     */
+&nbsp;    public String compareVesselSpeedMedians(String vesselCode1, String vesselCode2) {
+<b class="fc">&nbsp;        double median1 = calculateMedianSpeedDifference(vesselCode1);</b>
+<b class="fc">&nbsp;        double median2 = calculateMedianSpeedDifference(vesselCode2);</b>
+&nbsp;
+<b class="pc">&nbsp;        if (median1 &lt; median2) {</b>
+<b class="fc">&nbsp;            return vesselCode1;</b>
+<b class="nc">&nbsp;        } else if (median1 &gt; median2) {</b>
+<b class="nc">&nbsp;            return vesselCode2;</b>
+&nbsp;        } else {
+<b class="nc">&nbsp;            return &quot;equal&quot;;</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves speed outliers for a specific vessel based on a given threshold.
+&nbsp;     *
+&nbsp;     * @param vesselCode     the code of the vessel
+&nbsp;     * @param speedThreshold the threshold for determining speed outliers
+&nbsp;     * @return a list of MaritimeMetric objects that are considered speed outliers
+&nbsp;     */
+&nbsp;    public List&lt;MaritimeMetric&gt; getSpeedOutliers(String vesselCode, double speedThreshold) {
+<b class="nc">&nbsp;        validateVesselExists(vesselCode);</b>
+<b class="nc">&nbsp;        validateThreshold(speedThreshold);</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;MaritimeMetric&gt; outliers = maritimeMetricRepository.findSpeedOutliersByVesselCode(vesselCode, speedThreshold);</b>
+<b class="nc">&nbsp;        if (outliers.isEmpty()) {</b>
+<b class="nc">&nbsp;            String message = &quot;No speed outliers found for vessel &quot; + vesselCode + &quot; with threshold &quot; + speedThreshold;</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.SEVERE, message);</b>
+<b class="nc">&nbsp;            throw new ResourceNotFoundException(message);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return outliers;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves fuel outliers for a specific vessel based on a given threshold.
+&nbsp;     *
+&nbsp;     * @param vesselCode    the code of the vessel
+&nbsp;     * @param fuelThreshold the threshold for determining fuel outliers
+&nbsp;     * @return a list of MaritimeMetric objects that are considered fuel outliers
+&nbsp;     */
+&nbsp;    public List&lt;MaritimeMetric&gt; getFuelOutliers(String vesselCode, double fuelThreshold) {
+<b class="nc">&nbsp;        validateVesselExists(vesselCode);</b>
+<b class="nc">&nbsp;        validateThreshold(fuelThreshold);</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;MaritimeMetric&gt; outliers = maritimeMetricRepository.findFuelOutliersByVesselCode(vesselCode, fuelThreshold);</b>
+<b class="nc">&nbsp;        if (outliers.isEmpty()) {</b>
+<b class="nc">&nbsp;            String message = &quot;No fuel outliers found for vessel &quot; + vesselCode + &quot; with threshold &quot; + fuelThreshold;</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.SEVERE, message);</b>
+<b class="nc">&nbsp;            throw new ResourceNotFoundException(message);</b>
+&nbsp;        }
+<b class="nc">&nbsp;        return outliers;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates whether data exists for a specific vessel code.
+&nbsp;     *
+&nbsp;     * @param vesselCode the code of the vessel
+&nbsp;     * @throws ResourceNotFoundException if no data is found for the vessel
+&nbsp;     */
+&nbsp;    private void validateVesselExists(String vesselCode) {
+<b class="pc">&nbsp;        if (maritimeMetricRepository.findAllByVesselCode(vesselCode).isEmpty()) {</b>
+<b class="nc">&nbsp;            String message = &quot;No data found for vessel &quot; + vesselCode;</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.SEVERE, message);</b>
+<b class="nc">&nbsp;            throw new ResourceNotFoundException(message);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Validates the threshold value.
+&nbsp;     *
+&nbsp;     * @param threshold the threshold value to validate
+&nbsp;     * @throws IllegalArgumentException if the threshold is negative
+&nbsp;     */
+&nbsp;    private void validateThreshold(double threshold) {
+<b class="nc">&nbsp;        if (threshold &lt; 0) {</b>
+<b class="nc">&nbsp;            String message = &quot;Threshold must be non-negative&quot;;</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, message);</b>
+<b class="nc">&nbsp;            throw new IllegalArgumentException(message);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves consecutive groups of problematic waypoints for a specific problem type.
+&nbsp;     *
+&nbsp;     * @param vesselCode  the code of the vessel
+&nbsp;     * @param problemType the type of problem to filter by (e.g., &quot;missing&quot;, &quot;belowzero&quot;, &quot;outlier&quot;)
+&nbsp;     * @return a list of lists containing consecutive MaritimeMetric objects with the specified problem
+&nbsp;     */
+&nbsp;    public List&lt;List&lt;MaritimeMetric&gt;&gt; getConsecutiveProblematicGroups(String vesselCode, String problemType) {
+<b class="nc">&nbsp;        LOGGER.log(Level.INFO, &quot;Retrieving consecutive groups for vessel: &quot; + vesselCode + &quot; with problem type: &quot; + problemType);</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;MaritimeMetric&gt; waypoints = getWaypointsByProblemType(vesselCode, problemType);</b>
+&nbsp;
+<b class="nc">&nbsp;        List&lt;List&lt;MaritimeMetric&gt;&gt; groupedProblems = new ArrayList&lt;&gt;();</b>
+<b class="nc">&nbsp;        List&lt;MaritimeMetric&gt; currentGroup = new ArrayList&lt;&gt;();</b>
+&nbsp;
+<b class="nc">&nbsp;        for (int i = 0; i &lt; waypoints.size(); i++) {</b>
+<b class="nc">&nbsp;            if (i == 0 || isConsecutive(waypoints.get(i - 1), waypoints.get(i))) {</b>
+<b class="nc">&nbsp;                currentGroup.add(waypoints.get(i));</b>
+&nbsp;            } else {
+<b class="nc">&nbsp;                groupedProblems.add(new ArrayList&lt;&gt;(currentGroup));</b>
+<b class="nc">&nbsp;                LOGGER.log(Level.INFO, &quot;Added group with size: &quot; + currentGroup.size());</b>
+<b class="nc">&nbsp;                currentGroup.clear();</b>
+<b class="nc">&nbsp;                currentGroup.add(waypoints.get(i));</b>
+&nbsp;            }
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        if (!currentGroup.isEmpty()) {</b>
+<b class="nc">&nbsp;            groupedProblems.add(currentGroup);</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.INFO, &quot;Added last group with size: &quot; + currentGroup.size());</b>
+&nbsp;        }
+&nbsp;
+&nbsp;        // Sort groups by size in descending order
+<b class="nc">&nbsp;        groupedProblems.sort((group1, group2) -&gt; Integer.compare(group2.size(), group1.size()));</b>
+<b class="nc">&nbsp;        LOGGER.log(Level.INFO, &quot;Sorted groups by size in descending order for vessel: &quot; + vesselCode);</b>
+&nbsp;
+<b class="nc">&nbsp;        return groupedProblems;</b>
+&nbsp;    }
+&nbsp;
+&nbsp;// Helper method to get waypoints by problem type
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Retrieves waypoints for a specific vessel filtered by the type of problem.
+&nbsp;     *
+&nbsp;     * @param vesselCode  the code of the vessel
+&nbsp;     * @param problemType the type of problem to filter by (e.g., &quot;missing&quot;, &quot;belowzero&quot;, &quot;outlier&quot;)
+&nbsp;     * @return a list of MaritimeMetric objects that match the specified problem type
+&nbsp;     * @throws IllegalArgumentException if an unknown problem type is provided
+&nbsp;     */
+&nbsp;    private List&lt;MaritimeMetric&gt; getWaypointsByProblemType(String vesselCode, String problemType) {
+<b class="nc">&nbsp;        LOGGER.log(Level.INFO, &quot;Fetching waypoints for vessel: &quot; + vesselCode + &quot; with problem type: &quot; + problemType);</b>
+&nbsp;
+<b class="nc">&nbsp;        switch (problemType.toLowerCase()) {</b>
+&nbsp;            case &quot;missing&quot;:
+<b class="nc">&nbsp;                return maritimeMetricRepository.findAllByVesselCodeAndIsMissingTrue(vesselCode);</b>
+&nbsp;            case &quot;belowzero&quot;:
+<b class="nc">&nbsp;                return maritimeMetricRepository.findAllByVesselCodeAndIsBelowZeroTrue(vesselCode);</b>
+&nbsp;            case &quot;outlier&quot;:
+<b class="nc">&nbsp;                return maritimeMetricRepository.findAllByVesselCodeAndIsOutlierTrue(vesselCode);</b>
+&nbsp;            default:
+<b class="nc">&nbsp;                String errorMsg = &quot;Unknown problem type: &quot; + problemType;</b>
+<b class="nc">&nbsp;                LOGGER.log(Level.SEVERE, errorMsg);</b>
+<b class="nc">&nbsp;                throw new IllegalArgumentException(errorMsg);</b>
+&nbsp;        }
+&nbsp;    }
+&nbsp;
+&nbsp;    /**
+&nbsp;     * Checks if two waypoints are consecutive based on their timestamps.
+&nbsp;     *
+&nbsp;     * @param prev    the previous MaritimeMetric object
+&nbsp;     * @param current the current MaritimeMetric object
+&nbsp;     * @return true if the waypoints are consecutive, false otherwise
+&nbsp;     */
+&nbsp;    private boolean isConsecutive(MaritimeMetric prev, MaritimeMetric current) {
+<b class="nc">&nbsp;        if (prev.getDatetime() == null || current.getDatetime() == null) {</b>
+<b class="nc">&nbsp;            LOGGER.log(Level.WARNING, &quot;One of the waypoints has a null timestamp, marking as non-consecutive&quot;);</b>
+<b class="nc">&nbsp;            return false;</b>
+&nbsp;        }
+&nbsp;
+<b class="nc">&nbsp;        Duration timeDifference = Duration.between(prev.getDatetime(), current.getDatetime());</b>
+<b class="nc">&nbsp;        boolean isConsecutive = !timeDifference.isNegative() &amp;&amp; timeDifference.compareTo(TIME_THRESHOLD) &lt;= 0;</b>
+&nbsp;
+<b class="nc">&nbsp;        LOGGER.log(Level.INFO, &quot;Checking consecutiveness: Previous timestamp = &quot; + prev.getDatetime() +</b>
+<b class="nc">&nbsp;                &quot;, Current timestamp = &quot; + current.getDatetime() + &quot;, isConsecutive = &quot; + isConsecutive);</b>
+&nbsp;
+<b class="nc">&nbsp;        return isConsecutive;</b>
+&nbsp;    }
+&nbsp;}
+</code>
+</pre>
+</div>
+
+<script type="text/javascript">
+(function() {
+    var msie = false, msie9 = false;
+    /*@cc_on
+      msie = true;
+      @if (@_jscript_version >= 9)
+        msie9 = true;
+      @end
+    @*/
+
+    if (!msie || msie && msie9) {
+      hljs.highlightAll()
+      hljs.initLineNumbersOnLoad();
+    }
+})();
+</script>
+
+<div class="footer">
+    
+    <div style="float:right;">generated on 2024-11-01 10:26</div>
+</div>
+</body>
+</html>

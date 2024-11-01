@@ -1,0 +1,7 @@
+com.example.maritimemetrics
+com.example.maritimemetrics.controller
+com.example.maritimemetrics.dto
+com.example.maritimemetrics.exception
+com.example.maritimemetrics.model
+com.example.maritimemetrics.repository
+com.example.maritimemetrics.service
